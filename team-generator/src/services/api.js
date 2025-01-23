@@ -37,3 +37,7 @@ export const getPlayers = async () => {
 export const getTeams = async () => {
     return await axios.get(`${API_URL}/teams`);
 };
+
+export const getGeneratedTeamsById = async (id) => {
+    return await axios.get(`${API_URL}/teams/generated/${id}`);
+};

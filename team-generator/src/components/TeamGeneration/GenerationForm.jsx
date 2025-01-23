@@ -10,7 +10,7 @@ export function GenerationForm({ teams, players, onTeamsGenerated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    // if (!title.trim()) return;
 
     setLoading(true);
     setError('');
@@ -18,6 +18,8 @@ export function GenerationForm({ teams, players, onTeamsGenerated }) {
     try {
       const response = await generateTeams({ title, teamIds: teams.map(t => t._id) });
       setGeneratedLink(response.data.publicLink);
+  
+
       onTeamsGenerated(response.data.teams);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to generate teams');
@@ -55,7 +57,7 @@ export function GenerationForm({ teams, players, onTeamsGenerated }) {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Friday Futsal"
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
+            // required
           />
         </div>
 
