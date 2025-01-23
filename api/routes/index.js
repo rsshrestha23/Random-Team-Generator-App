@@ -15,5 +15,7 @@ router.delete('/teams/:id', teamController.deleteTeam);
 router.get('/teams',teamController.getAllTeams)
 router.post('/generate-teams', teamController.generateTeams);
 router.get('/generate-teams', teamController.getGeneratedTeams)
+router.get('/teams/generated/:id', teamController.getGeneratedTeams);
+router.get('/generated', teamController.getAllGeneratedTeams);
 
 export default router;
