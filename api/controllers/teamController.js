@@ -22,40 +22,109 @@ export const getAllTeams = async (req, res) => {
     res.send(teams);
 };
 
-let generatedTeams = []; // This will store the generated teams in memory
-let generatedTitles = new Set(); // Set to store unique titles
+
+// Store generated teams with their IDs and data
+const generatedTeamsStore = new Map();
 
 export const generateTeams = async (req, res) => {
-    const { title } = req.body; // Extract title from request body
+    try {
+        const { title } = req.body;
+        const players = await Player.find();
 
-    // Check if the title is unique
-    if (generatedTitles.has(title)) {
-        return res.status(400).json({ message: "Title must be unique. Please provide a different title." });
+        if (!players.length) {
+            return res.status(400).json({ message: "No players available to generate teams" });
+        }
+
+        // Sort players by skill level in descending order
+        players.sort((a, b) => b.skill - a.skill);
+
+        const numberOfTeams = 2;
+        const teams = Array.from({ length: numberOfTeams }, (_, i) => ({ 
+            name: `Team ${i + 1}`, 
+            players: [] 
+        }));
+
+        // Distribute players into teams using snake draft method
+        players.forEach((player, index) => {
+            const teamIndex = index % numberOfTeams;
+            teams[teamIndex].players.push({
+                name: player.name,
+                skill: player.skill
+            });
+        });
+
+        // Generate a unique ID
+        const generationId = Math.floor(Math.random() * 100000000).toString();
+
+        // Store the generated teams with their data
+        const generationData = {
+            id: generationId,
+            title: title || 'Generated Teams',
+            teams,
+            createdAt: new Date().toISOString()
+        };
+
+        generatedTeamsStore.set(generationId, generationData);
+
+        // === LOGGING SOLUTIONS ===
+        
+        // Option 1: Convert Map to an array of key-value pairs and log it
+        console.log('@__-generationData (Array):', Array.from(generatedTeamsStore.entries()));
+
+        // Option 2: Use forEach to log each key and value
+        generatedTeamsStore.forEach((value, key) => {
+            console.log(`Key: ${key}`, 'Value:', value);
+        });
+
+        // Option 3: Convert Map to an Object and log it as JSON
+        console.log('@__-generationData (JSON):', JSON.stringify(Object.fromEntries(generatedTeamsStore), null, 2));
+
+        // Option 4: Use console.dir for a structured log
+        console.dir(generatedTeamsStore, { depth: null });
+
+        res.status(200).json({
+            ...generationData,
+            publicLink: `http://localhost:5173/shared/${generationId}`
+        });
+    } catch (error) {
+        console.error('Error generating teams:', error);
+        res.status(500).json({ message: "Error generating teams" });
     }
-
-    const players = await Player.find(); // Fetch all players
-
-    // Sort players by skill level in descending order
-    players.sort((a, b) => b.skill - a.skill);
-
-    const numberOfTeams = 2; // You can modify this based on your requirements
-    generatedTeams = Array.from({ length: numberOfTeams }, (_, i) => ({ name: `Team ${i + 1}`, players: [] }));
-
-    // Distribute players into teams
-    players.forEach((player, index) => {
-        generatedTeams[index % numberOfTeams].players.push(player);
-    });
-
-    // Store the title in the set
-    generatedTitles.add(title);
-
-    res.status(200).json({ title, teams: generatedTeams });
 };
 
-export const getGeneratedTeams = (req, res) => {
-    if (generatedTeams.length === 0) {
-        return res.status(404).json({ message: "No teams have been generated yet." });
-    }
+export const getGeneratedTeams = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log("@__id",id)
 
-    res.status(200).json({ teams: generatedTeams });
+        if (!id) {
+            return res.status(400).json({ message: "Generation ID is required" });
+        }
+
+        const generationData = generatedTeamsStore.get(id);
+
+        if (!generationData) {
+            return res.status(404).json({ message: "Generated teams not found" });
+        }
+
+        res.status(200).json(generationData);
+    } catch (error) {
+        console.error('Error getting generated teams:', error);
+        res.status(500).json({ message: "Error retrieving generated teams" });
+    }
+};
+
+export const getAllGeneratedTeams = async (req, res) => {
+    try {
+        const allGenerations = Array.from(generatedTeamsStore.values());
+        
+        if (allGenerations.length === 0) {
+            return res.status(404).json({ message: "No teams have been generated yet." });
+        }
+
+        res.status(200).json(allGenerations);
+    } catch (error) {
+        console.error('Error getting all generated teams:', error);
+        res.status(500).json({ message: "Error retrieving all generated teams" });
+    }
 };
